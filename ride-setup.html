@@ -24,18 +24,16 @@
         <button id="menu-toggle">☰</button>
         <span class="page-title">Book a Ride</span>
       </header>
-      <div class="ride-section">
-        <h2>Request a Ride</h2>
-        <form id="ride-form">
-          <label>
-            Pickup Location:
-            <input type="text" id="pickup" required placeholder="Enter pickup point">
-          </label>
-          <label>
-            Destination:
-            <input type="text" id="destination" required placeholder="Enter destination">
-          </label>
-          <label>
+      <form id="ride-form">
+  <label>
+    Pickup Location:
+    <input type="text" id="pickup" required placeholder="Enter pickup point">
+  </label>
+  <label>
+    Destination:
+    <input type="text" id="destination" required placeholder="Enter destination">
+  </label>
+  <label>
     Vehicle Type:
     <select id="vehicle-type" required>
       <option value="">Select vehicle type</option>
@@ -44,16 +42,20 @@
       <option value="Tricycle">Tricycle</option>
       <option value="Jeepney">Jeepney</option>
       <option value="Bus">Bus</option>
-      <!-- Add other types as needed -->
     </select>
   </label>
-          <button type="submit">Book Ride</button>
-        </form>
-        <div id="ride-status"></div>
-      </div>
-      
-    </div>
-  </div>
+  <label>
+    Payment Method:
+    <select id="payment-method" required>
+      <option value="">Select payment method</option>
+      <option value="cash">Cash</option>
+      <option value="card">Card</option>
+      <option value="gcash">GCash</option>
+    </select>
+  </label>
+  <button type="submit">Book Ride</button>
+</form>
+
 
   
 
@@ -63,6 +65,7 @@
     // Sidebar logic (drawer)
     const sidebar = document.getElementById("sidebar");
     const toggle = document.getElementById("menu-toggle");
+    
     toggle.addEventListener("click", () => {
       sidebar.classList.toggle("open");
     });
@@ -73,14 +76,16 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsYXN2bmRxbWhhaW95enllZHBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgzODIwNjIsImV4cCI6MjA2Mzk1ODA2Mn0.IhbTIgHda9LrY7EpbqwKfYjZHRPAIwFcxOxwi1srJ4U'
     );
 
-    document.getElementById("ride-form").onsubmit = async function(e) {
+   document.getElementById("ride-form").onsubmit = async function(e) {
   e.preventDefault();
   const statusDiv = document.getElementById("ride-status");
   statusDiv.textContent = "";
   const pickup = document.getElementById("pickup").value;
   const dropoff = document.getElementById("destination").value;
+  const vehicleType = document.getElementById("vehicle-type").value;
+  const paymentMethod = document.getElementById("payment-method").value;
 
-  // 1. Get the currently logged-in user's supabase UID
+  // 1. Get logged-in user
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     statusDiv.textContent = "You must be logged in to book a ride.";
@@ -88,7 +93,7 @@
     return;
   }
 
-  // 2. Get the user's database ID (user_id)
+  // 2. Get user_id from users table
   const { data: userData, error: userError } = await supabase
     .from("users")
     .select("user_id")
@@ -101,35 +106,33 @@
     return;
   }
 
-  // 3. Use userData.user_id as passenger_id in your booking
   const passenger_id = userData.user_id;
 
+  // 3. Insert ride including vehicleType and paymentMethod
   const { error } = await supabase
     .from("rides")
     .insert([{
       passenger_id: passenger_id,
       pickup: pickup,
       dropoff: dropoff,
+      vehicle_type: vehicleType,
+      payment_method: paymentMethod, // <-- added!
       status: "requested"
     }]);
 
   if (!error) {
-  statusDiv.textContent = "Ride booked! Waiting for a driver to accept...";
-  statusDiv.style.color = "green";
-  document.getElementById("ride-form").reset();
-  console.log("Redirecting to Booking-driver.html..."); // <-- debug log
-  setTimeout(() => {
-    window.location.href = "ride-menu.html"; // <-- double-check filename!
-  }, 1200);
-
-
+    statusDiv.textContent = "Ride booked! Waiting for a driver to accept...";
+    statusDiv.style.color = "green";
+    document.getElementById("ride-form").reset();
+    setTimeout(() => {
+      window.location.href = "ride-menu.html";
+    }, 1200);
   } else {
     statusDiv.textContent = "Failed to book ride: " + error.message;
     statusDiv.style.color = "red";
     console.error(error);
   }
-
-    }
+}
   </script>
 </body>
 </html>
